@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Platformer2D.GameObjects;
+using System.Collections.Generic;
 
 namespace Platformer2D
 {
@@ -13,19 +15,27 @@ namespace Platformer2D
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
-        public const int MeterInPixel = 100;
+        public const float MeterInPixel = 100f;
 
         private World World{get; set;}
+
+
+        List<IGameObject> GameObjects { get; set; }
+
+        Matrix View { get; set; }
 
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
 
+            IsMouseVisible = true;
+
             // Initialisation de Farseer
             World = new World(new Vector2(0, 10));
 
-
+            GameObjects = new List<IGameObject>();
+            
         }
 
         /// <summary>
@@ -47,6 +57,22 @@ namespace Platformer2D
         {
             // Crée  un nouveau SpriteBatch qui sera utilisé pour afficher les différentes textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            Texture2D grass = Content.Load<Texture2D>("Grass\\grass");
+            
+            GameObjects.Add(new Floor(World, spriteBatch, new Vector2(2.5f * grass.Width / MeterInPixel, 0), grass, 5));
+            GameObjects.Add(new Floor(World, spriteBatch, new Vector2(5f * grass.Width / MeterInPixel, -1.5f), grass, 3));
+
+            Texture2D playerIdle = Content.Load<Texture2D>("PlayerPoses\\player_idle");
+            var player = new Player(World, spriteBatch, new Vector2(0, -2), playerIdle);
+            GameObjects.Add(player);
+
+
+            var screenCenter = new Vector2(GraphicsDevice.Viewport.Width / 4f, GraphicsDevice.Viewport.Height / 1.25f);
+
+
+            View = Matrix.CreateTranslation(new Vector3(screenCenter, 0f));
+
         }
 
         /// <summary>
@@ -70,7 +96,15 @@ namespace Platformer2D
 
             // ToDo: ajouter la logique du jeu ici.
 
+            World.Step(gameTime.ElapsedGameTime.Milliseconds / 1000f);
+
             base.Update(gameTime);
+
+            foreach(var o in GameObjects)
+            {
+                o.Update(gameTime);
+            }
+
         }
 
         /// <summary>
@@ -83,7 +117,16 @@ namespace Platformer2D
 
             // ToDo: ajouter les oppérations d'affichage ici.
 
+            spriteBatch.Begin(transformMatrix: View);
+
             base.Draw(gameTime);
+
+            foreach(var o in GameObjects)
+            {
+                o.Draw(gameTime);
+            }
+
+            spriteBatch.End();
         }
     }
 }
